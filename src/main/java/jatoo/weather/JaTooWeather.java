@@ -17,7 +17,16 @@
 
 package jatoo.weather;
 
-public class JaTooWeather {
+import java.io.Serializable;
+
+/**
+ * The object representation of the weather (used also to cache the weather).
+ * 
+ * @author <a href="http://cristian.sulea.net" rel="author">Cristian Sulea</a>
+ * @version 1.1, October 11, 2016
+ */
+@SuppressWarnings("serial")
+public class JaTooWeather implements Serializable {
 
   public static enum TEMPERATURE_UNIT {
     CELSIUS,
@@ -49,6 +58,8 @@ public class JaTooWeather {
   public static enum RAIN_UNIT {}
 
   public static enum SNOW_UNIT {}
+
+  public long timestamp;
 
   public String description;
 

@@ -17,8 +17,6 @@
 
 package jatoo.weather;
 
-import java.io.IOException;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -28,7 +26,7 @@ public class JaTooWeatherTests {
   public void test1() throws Throwable {
 
     JaTooWeatherService service = new JaTooWeatherService() {
-      public JaTooWeather getWeather(String city) throws IOException {
+      protected JaTooWeather getWeatherImpl(String city) {
         return getJaTooWeather();
       }
     };
@@ -52,7 +50,7 @@ public class JaTooWeatherTests {
   public void test2() throws Throwable {
 
     JaTooWeatherService service = new JaTooWeatherService("ro") {
-      public JaTooWeather getWeather(String city) throws IOException {
+      protected JaTooWeather getWeatherImpl(String city) {
         return getJaTooWeather();
       }
     };

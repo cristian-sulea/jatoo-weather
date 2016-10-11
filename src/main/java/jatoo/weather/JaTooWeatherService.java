@@ -17,15 +17,55 @@
 
 package jatoo.weather;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import jatoo.resources.ResourcesTexts;
 
+/**
+ * The base of a weather service, implementing the core functionality and also a
+ * caching system.
+ * 
+ * @author <a href="http://cristian.sulea.net" rel="author">Cristian Sulea</a>
+ * @version 1.1, October 11, 2016
+ */
+@SuppressWarnings("unchecked")
 public abstract class JaTooWeatherService {
 
-  /** the texts */
+  /** the logger */
+  private static final Log logger = LogFactory.getLog(JaTooWeatherService.class);
+
+  /** the file where the cache will be saved */
+  private static final File CACHE_FILE = new File(System.getProperty("user.home"), ".jatoo/weather/cache.obj");
+  static {
+    CACHE_FILE.getParentFile().mkdirs();
+  }
+
+  /** the expiration threshold for the cache objects */
+  private static final long CACHE_EXPIRATION_THRESHOLD = 5 * 60 * 1000L;
+
+  /** the cache */
+  private static final Map<String, JaTooWeather> CACHE = new HashMap<>();
+  static {
+    try (ObjectInputStream stream = new ObjectInputStream(new FileInputStream(CACHE_FILE))) {
+      CACHE.putAll((Map<String, JaTooWeather>) stream.readObject());
+    } catch (IOException | ClassNotFoundException e) {
+      logger.warn("failed to read the cache from the cache file", e);
+    }
+  }
+
+  /** the texts resources */
   private final ResourcesTexts texts;
 
   private final String missingValueText;
@@ -45,7 +85,38 @@ public abstract class JaTooWeatherService {
     this(null);
   }
 
-  public abstract JaTooWeather getWeather(String city) throws IOException;
+  public final JaTooWeather getWeather(String city) {
+
+    synchronized (CACHE) {
+
+      JaTooWeather weather = CACHE.get(city);
+
+      if (weather == null || (System.currentTimeMillis() - weather.timestamp) > CACHE_EXPIRATION_THRESHOLD) {
+
+        try {
+
+          weather = getWeatherImpl(city);
+          weather.timestamp = System.currentTimeMillis();
+
+          CACHE.put(city, weather);
+        }
+
+        catch (Throwable t) {
+          logger.error("failed to get the weather", t);
+        }
+      }
+
+      try (ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(CACHE_FILE))) {
+        stream.writeObject(CACHE);
+      } catch (IOException e) {
+        logger.error("failed to write the cache to the cache file", e);
+      }
+
+      return weather;
+    }
+  }
+
+  protected abstract JaTooWeather getWeatherImpl(String city) throws Throwable;
 
   public String getDescription(final JaTooWeather weather) {
 
