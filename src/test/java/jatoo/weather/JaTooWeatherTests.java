@@ -31,7 +31,7 @@ public class JaTooWeatherTests {
       }
     };
 
-    JaTooWeather weather = service.getWeather("683506");
+    JaTooWeather weather = service.getWeather("683506", false);
 
     Assert.assertEquals("broken clouds", service.getDescription(weather));
     Assert.assertEquals("Temperature: 15.07 °C", service.getTemperatureWithText(weather));
@@ -55,7 +55,7 @@ public class JaTooWeatherTests {
       }
     };
 
-    JaTooWeather weather = service.getWeather("683506");
+    JaTooWeather weather = service.getWeather("683506", false);
 
     Assert.assertEquals("broken clouds", service.getDescription(weather));
     Assert.assertEquals("Temperatura: 15.07 °C", service.getTemperatureWithText(weather));

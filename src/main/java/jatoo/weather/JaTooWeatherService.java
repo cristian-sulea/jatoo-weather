@@ -85,35 +85,58 @@ public abstract class JaTooWeatherService {
     this(null);
   }
 
-  public final JaTooWeather getWeather(String city) {
+  public final JaTooWeather getWeather(final String city, final boolean useCache) {
 
-    synchronized (CACHE) {
+    JaTooWeather weather;
 
-      JaTooWeather weather = CACHE.get(city);
+    if (!useCache) {
 
-      if (weather == null || (System.currentTimeMillis() - weather.timestamp) > CACHE_EXPIRATION_THRESHOLD) {
-
-        try {
-
-          weather = getWeatherImpl(city);
-          weather.timestamp = System.currentTimeMillis();
-
-          CACHE.put(city, weather);
-        }
-
-        catch (Throwable t) {
-          logger.error("failed to get the weather", t);
-        }
+      try {
+        weather = getWeatherImpl(city);
+        weather.timestamp = System.currentTimeMillis();
       }
 
-      try (ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(CACHE_FILE))) {
-        stream.writeObject(CACHE);
-      } catch (IOException e) {
-        logger.error("failed to write the cache to the cache file", e);
+      catch (Throwable t) {
+        weather = null;
+        logger.error("failed to get the weather", t);
       }
-
-      return weather;
     }
+
+    else {
+
+      synchronized (CACHE) {
+
+        weather = CACHE.get(city);
+
+        if (weather == null || (System.currentTimeMillis() - weather.timestamp) > CACHE_EXPIRATION_THRESHOLD) {
+
+          try {
+
+            weather = getWeatherImpl(city);
+            weather.timestamp = System.currentTimeMillis();
+
+            CACHE.put(city, weather);
+
+            try (ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(CACHE_FILE))) {
+              stream.writeObject(CACHE);
+            } catch (IOException e) {
+              logger.error("failed to write the cache to the cache file", e);
+            }
+          }
+
+          catch (Throwable t) {
+            weather = null;
+            logger.error("failed to get the weather", t);
+          }
+        }
+      }
+    }
+
+    return weather;
+  }
+
+  public final JaTooWeather getWeather(final String city) {
+    return getWeather(city, true);
   }
 
   protected abstract JaTooWeather getWeatherImpl(String city) throws Throwable;
