@@ -58,15 +58,15 @@ public class JaTooWeatherTests {
     JaTooWeather weather = service.getWeather("683506", false);
 
     Assert.assertEquals("broken clouds", service.getDescription(weather));
-    Assert.assertEquals("Temperatura: 15.07 °C", service.getTemperatureWithText(weather));
+    Assert.assertEquals("Temperatură: 15.07 °C", service.getTemperatureWithText(weather));
     Assert.assertEquals("Umiditate: 79 %", service.getHumidityWithText(weather));
-    Assert.assertEquals("Presiune atmosferica: 1026.69 hPa", service.getPressureWithText(weather));
-    Assert.assertEquals("Vant: 2.21 metri/sec", service.getWindWithText(weather));
-    Assert.assertEquals("Directia vantului: 57.5015 grade (meteorologice)", service.getWindDirectionWithText(weather));
+    Assert.assertEquals("Presiune atmosferică: 1026.69 hPa", service.getPressureWithText(weather));
+    Assert.assertEquals("Vânt: 2.21 metri/sec", service.getWindWithText(weather));
+    Assert.assertEquals("Direcția vântului: 57.5015 grade (meteorologice)", service.getWindDirectionWithText(weather));
     Assert.assertEquals("Nori: 56 %", service.getCloudsWithText(weather));
     Assert.assertEquals("Ploaie: -", service.getRainWithText(weather));
-    Assert.assertEquals("Zapada: -", service.getSnowWithText(weather));
-    Assert.assertEquals("Rasarit: 07:25", service.getSunriseWithText(weather));
+    Assert.assertEquals("Zăpada: -", service.getSnowWithText(weather));
+    Assert.assertEquals("Răsărit: 07:25", service.getSunriseWithText(weather));
     Assert.assertEquals("Apus: 18:38", service.getSunsetWithText(weather));
   }
 
