@@ -61,6 +61,7 @@ public class JaTooWeather implements Serializable {
 
   public long timestamp;
 
+  public String city;
   public String description;
 
   public Number temperature;
