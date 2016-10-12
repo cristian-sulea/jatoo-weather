@@ -20,7 +20,7 @@ package jatoo.weather;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class JaTooWeatherTests {
+public class JaTooWeatherTest {
 
   @Test
   public void test1() throws Throwable {
