@@ -55,9 +55,13 @@ public class JaTooWeather implements Serializable {
     PERCENT
   }
 
-  public static enum RAIN_UNIT {}
+  public static enum RAIN_UNIT {
+    
+  }
 
-  public static enum SNOW_UNIT {}
+  public static enum SNOW_UNIT {
+    
+  }
 
   public long timestamp;
 
