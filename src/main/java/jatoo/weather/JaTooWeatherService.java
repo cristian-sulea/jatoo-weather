@@ -17,16 +17,7 @@
 
 package jatoo.weather;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -38,39 +29,21 @@ import jatoo.resources.ResourcesTexts;
  * caching system.
  * 
  * @author <a href="http://cristian.sulea.net" rel="author">Cristian Sulea</a>
- * @version 1.1, October 11, 2016
+ * @version 2.0, October 19, 2016
  */
-@SuppressWarnings("unchecked")
 public abstract class JaTooWeatherService {
 
   /** The logger. */
   private static final Log LOGGER = LogFactory.getLog(JaTooWeatherService.class);
 
-  /** The file where the cache will be saved. */
-  private static final File CACHE_FILE = new File(System.getProperty("user.home"), ".jatoo/weather/cache.obj");
-  static {
-    CACHE_FILE.getParentFile().mkdirs();
-  }
-
   /** The expiration threshold for the cache objects. */
-  private static final long CACHE_EXPIRATION_THRESHOLD = 5 * 60 * 1000L;
+  private static final long CACHE_EXPIRATION_THRESHOLD = TimeUnit.MINUTES.toMillis(5);
 
   /** The cache. */
-  private static final Map<String, JaTooWeather> CACHE = new HashMap<>();
-  static {
-    try (ObjectInputStream stream = new ObjectInputStream(new FileInputStream(CACHE_FILE))) {
-      CACHE.putAll((Map<String, JaTooWeather>) stream.readObject());
-    } catch (IOException | ClassNotFoundException e) {
-      LOGGER.warn("failed to read the cache from the cache file", e);
-    }
-  }
+  private static final JaTooWeatherCache CACHE = JaTooWeatherCache.getInstance();
 
   /** The texts resources. */
   private final ResourcesTexts texts;
-
-  private final String missingValueText;
-  private final String unitSeparatorText;
-  private final String valueSeparatorText;
 
   /**
    * The constructor.
@@ -79,12 +52,7 @@ public abstract class JaTooWeatherService {
    *          the language for which texts are desired
    */
   public JaTooWeatherService(final String language) {
-
     texts = new ResourcesTexts(getClass(), JaTooWeatherService.class, language);
-
-    missingValueText = texts.getText("jatoo.weather.missingValue");
-    unitSeparatorText = texts.getText("jatoo.weather.unitSeparator");
-    valueSeparatorText = texts.getText("jatoo.weather.valueSeparator");
   }
 
   /**
@@ -115,7 +83,7 @@ public abstract class JaTooWeatherService {
 
       synchronized (CACHE) {
 
-        weather = CACHE.get(city);
+        weather = CACHE.get(this, city);
 
         if (weather == null || (System.currentTimeMillis() - weather.timestamp) > CACHE_EXPIRATION_THRESHOLD) {
 
@@ -124,13 +92,8 @@ public abstract class JaTooWeatherService {
             weather = getWeatherImpl(city);
             weather.timestamp = System.currentTimeMillis();
 
-            CACHE.put(city, weather);
-
-            try (ObjectOutputStream stream = new ObjectOutputStream(new FileOutputStream(CACHE_FILE))) {
-              stream.writeObject(CACHE);
-            } catch (IOException e) {
-              LOGGER.error("failed to write the cache to the cache file", e);
-            }
+            CACHE.add(this, city, weather);
+            CACHE.save();
           }
 
           catch (Throwable t) {
@@ -150,143 +113,35 @@ public abstract class JaTooWeatherService {
 
   protected abstract JaTooWeather getWeatherImpl(String city) throws Throwable;
 
-  public final String getDescription(final JaTooWeather weather) {
-
-    if (weather.description == null) {
-      return missingValueText;
-    }
-
-    return weather.description;
+  /**
+   * Gets the text ({@link String}) for the given key.
+   * 
+   * @param key
+   *          the key for the desired text
+   * 
+   * @return the text for the given key, or the key if the text was not found
+   * 
+   * @see jatoo.resources.ResourcesTexts#getText(java.lang.String)
+   */
+  public String getText(String key) {
+    return this.texts.getText(key);
   }
 
-  public final String getTemperature(final JaTooWeather weather) {
-
-    if (weather.temperature == null) {
-      return missingValueText;
-    }
-
-    return weather.temperature + unitSeparatorText + texts.getText("jatoo.weather.temperature.unit." + weather.temperatureUnit.name());
-  }
-
-  public final String getTemperatureWithText(final JaTooWeather weather) {
-    return texts.getText("jatoo.weather.temperature.text") + valueSeparatorText + getTemperature(weather);
-  }
-
-  public final String getHumidity(final JaTooWeather weather) {
-
-    if (weather.humidity == null) {
-      return missingValueText;
-    }
-
-    return weather.humidity + unitSeparatorText + texts.getText("jatoo.weather.humidity.unit." + weather.humidityUnit.name());
-  }
-
-  public final String getHumidityWithText(final JaTooWeather weather) {
-    return texts.getText("jatoo.weather.humidity.text") + valueSeparatorText + getHumidity(weather);
-  }
-
-  public final String getPressure(final JaTooWeather weather) {
-
-    if (weather.pressure == null) {
-      return missingValueText;
-    }
-
-    return weather.pressure + unitSeparatorText + texts.getText("jatoo.weather.pressure.unit." + weather.pressureUnit.name());
-  }
-
-  public final String getPressureWithText(final JaTooWeather weather) {
-    return texts.getText("jatoo.weather.pressure.text") + valueSeparatorText + getPressure(weather);
-  }
-
-  public final String getWind(final JaTooWeather weather) {
-
-    if (weather.wind == null) {
-      return missingValueText;
-    }
-
-    return weather.wind + unitSeparatorText + texts.getText("jatoo.weather.wind.unit." + weather.windUnit.name());
-  }
-
-  public final String getWindWithText(final JaTooWeather weather) {
-    return texts.getText("jatoo.weather.wind.text") + valueSeparatorText + getWind(weather);
-  }
-
-  public final String getWindDirection(final JaTooWeather weather) {
-
-    if (weather.windDirection == null) {
-      return missingValueText;
-    }
-
-    return weather.windDirection + unitSeparatorText + texts.getText("jatoo.weather.windDirection.unit." + weather.windDirectionUnit.name());
-  }
-
-  public final String getWindDirectionWithText(final JaTooWeather weather) {
-    return texts.getText("jatoo.weather.windDirection.text") + valueSeparatorText + getWindDirection(weather);
-  }
-
-  public final String getClouds(final JaTooWeather weather) {
-
-    if (weather.clouds == null) {
-      return missingValueText;
-    }
-
-    return weather.clouds + unitSeparatorText + texts.getText("jatoo.weather.clouds.unit." + weather.cloudsUnit.name());
-  }
-
-  public final String getCloudsWithText(final JaTooWeather weather) {
-    return texts.getText("jatoo.weather.clouds.text") + valueSeparatorText + getClouds(weather);
-  }
-
-  public final String getRain(final JaTooWeather weather) {
-
-    if (weather.rain == null) {
-      return missingValueText;
-    }
-
-    return weather.rain + "";
-  }
-
-  public final String getRainWithText(final JaTooWeather weather) {
-    return texts.getText("jatoo.weather.rain.text") + valueSeparatorText + getRain(weather);
-  }
-
-  public final String getSnow(final JaTooWeather weather) {
-
-    if (weather.snow == null) {
-      return missingValueText;
-    }
-
-    return weather.snow + "";
-  }
-
-  public final String getSnowWithText(final JaTooWeather weather) {
-    return texts.getText("jatoo.weather.snow.text") + valueSeparatorText + getSnow(weather);
-  }
-
-  public final String getSunrise(final JaTooWeather weather) {
-
-    if (weather.sunrise == null) {
-      return missingValueText;
-    }
-
-    return new SimpleDateFormat(texts.getText("jatoo.weather.sunrise.pattern")).format(new Date(weather.sunrise));
-  }
-
-  public final String getSunriseWithText(final JaTooWeather weather) {
-    return texts.getText("jatoo.weather.sunrise.text") + valueSeparatorText + getSunrise(weather);
-  }
-
-  public final String getSunset(final JaTooWeather weather) {
-
-    if (weather.sunset == null) {
-      return missingValueText;
-    }
-
-    return new SimpleDateFormat(texts.getText("jatoo.weather.sunset.pattern")).format(new Date(weather.sunset));
-  }
-
-  public final String getSunsetWithText(final JaTooWeather weather) {
-    return texts.getText("jatoo.weather.sunset.text") + valueSeparatorText + getSunset(weather);
+  /**
+   * Format the given arguments using the text for the given key.
+   * 
+   * @param key
+   *          the key for the desired text
+   * @param arguments
+   *          object(s) to format
+   * 
+   * @return the formatted text
+   * 
+   * @see jatoo.resources.ResourcesTexts#getText(java.lang.String,
+   *      java.lang.Object[])
+   */
+  public String getText(String key, Object... arguments) {
+    return this.texts.getText(key, arguments);
   }
 
 }
