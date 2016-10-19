@@ -100,7 +100,14 @@ public class JaTooWeatherCache {
   }
 
   public JaTooWeather get(final JaTooWeatherService service, final String city) {
-    return new JaTooWeather(service, CACHE.get(createKey(service, city)));
+
+    JaTooWeatherCacheObject weather = CACHE.get(createKey(service, city));
+
+    if (weather == null) {
+      return null;
+    }
+
+    return new JaTooWeather(service, weather);
   }
 
   private String createKey(final JaTooWeatherService service, final String city) {

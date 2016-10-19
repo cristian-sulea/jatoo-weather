@@ -118,8 +118,6 @@ public class JaTooWeather {
     this.unitSeparatorText = service.getText("jatoo.weather.unitSeparator");
     this.valueSeparatorText = service.getText("jatoo.weather.valueSeparator");
 
-    this.timestamp = weather.getTimestamp();
-
     this.city = weather.getCity();
     this.description = weather.getDescription();
 
